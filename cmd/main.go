@@ -1,14 +1,14 @@
 package main
 
 import (
+	"MarketVK/internal/db"
 	"MarketVK/internal/handler"
-	"MarketVK/internal/repository"
 	"log"
 	"net/http"
 )
 
 func main() {
-	if err := repository.InitDB(); err != nil {
+	if err := db.InitDB(); err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
 	mux := handler.NewRouter()

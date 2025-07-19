@@ -1,10 +1,12 @@
-package repository
+package db
 
 import (
+	"os"
+
 	"MarketVK/internal/model"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"os"
 )
 
 var DB *gorm.DB

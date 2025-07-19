@@ -7,7 +7,7 @@ type Ad struct {
 	ImageURL    string  `json: "image_url"`
 	Price       float64 `json: "price"`
 	AuthorID    int     `gorm:"not null" json: "author_id"`
-	Author      User    `gorm:"foreignKey:AuthorID" json: "author"`
+	Author      User    `gorm:"foreignKey:AuthorID" json: "author,omitempty"`
 }
 
 type User struct {
