@@ -2,6 +2,7 @@ package repository
 
 import (
 	"MarketVK/internal/model"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"os"
 )

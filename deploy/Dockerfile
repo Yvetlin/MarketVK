@@ -1,11 +1,14 @@
 FROM golang:1.24-alpine
 
 WORKDIR /app
-COPY .. .
+
+COPY go.mod go.sum ./
 RUN go mod download
+
+COPY . .
+
 RUN go build -o server ./cmd/main.go
+
 
 EXPOSE 8080
 CMD ["/app/server"]
-
-LABEL authors="yvetlin"
