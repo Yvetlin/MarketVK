@@ -2,7 +2,7 @@ name: Security Audit (Smart Code Audit)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
   workflow_dispatch:
 
@@ -11,33 +11,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout проекта, который проверяем (MarketVK)
       - name: Checkout MarketVK
         uses: actions/checkout@v4
 
+      # 2. Checkout инструмента Smart Code Audit в отдельную папку
       - name: Checkout Smart Code Audit tool
         uses: actions/checkout@v4
         with:
           repository: Yvetlin/smart-code-audit
           path: sca-tool
 
+      # 3. Установка Go
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.22"
 
+      # 4. Установка gosec (нужен для статического анализа)
       - name: Install gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
+      # 5. Сборка Smart Code Audit
       - name: Build Smart Code Audit
         run: |
           cd sca-tool
+          go mod download
           go build -o sca ./cmd/sca
 
+      # 6. Запуск аудита MarketVK
       - name: Run Smart Code Audit on MarketVK
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
         run: |
           ./sca-tool/sca --target .
+
+      # 7. Загрузка отчетов как артефактов (ДАЖЕ ЕСЛИ PIPELINE УПАЛ)
+      - name: Upload audit reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smart-code-audit-reports
+          path: |
+            results.md
+            results.sarif
