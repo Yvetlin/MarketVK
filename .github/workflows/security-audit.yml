@@ -23,20 +23,21 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: "1.22"
 
       - name: Install gosec
-        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      - name: Download dependencies
+      - name: Build Smart Code Audit
         run: |
           cd sca-tool
-          go mod download
+          go build -o sca ./cmd/sca
 
       - name: Run Smart Code Audit on MarketVK
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
         run: |
-          cd sca-tool
-          go run ./cmd/sca --target ..
+          ./sca-tool/sca --target .
