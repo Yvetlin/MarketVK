@@ -47,7 +47,9 @@ jobs:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
         run: |
-          ./sca-tool/sca --target .
+          ./sca-tool/sca \
+            --config sca-tool/configs/config.yaml \
+            --target .
 
       # 7. Загрузка отчетов как артефактов (ДАЖЕ ЕСЛИ PIPELINE УПАЛ)
       - name: Upload audit reports
