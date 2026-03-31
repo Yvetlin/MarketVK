@@ -11,47 +11,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout проекта, который проверяем (MarketVK)
-      - name: Checkout MarketVK
+      # 1. Checkout проекта
+      - name: Checkout project
         uses: actions/checkout@v4
 
-      # 2. Checkout инструмента Smart Code Audit в отдельную папку
+      # 2. Checkout Smart Code Audit
       - name: Checkout Smart Code Audit tool
         uses: actions/checkout@v4
         with:
           repository: Yvetlin/smart-code-audit
           path: sca-tool
 
-      # 3. Установка Go
+      # 3. Go
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.22"
 
-      # 4. Установка gosec (нужен для статического анализа)
+      # 4. gosec
       - name: Install gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      # 5. Сборка Smart Code Audit
+      # 5. Build SCA
       - name: Build Smart Code Audit
         run: |
           cd sca-tool
           go mod download
           go build -o sca ./cmd/sca
 
-      # 6. Запуск аудита MarketVK
-      - name: Run Smart Code Audit on MarketVK
+      # 6. Run SCA (может упасть - это норм)
+      - name: Run Smart Code Audit
+        id: sca
+        continue-on-error: true
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           ./sca-tool/sca \
             --config sca-tool/configs/config.yaml \
             --target .
 
-      # 7. Загрузка отчетов как артефактов (ДАЖЕ ЕСЛИ PIPELINE УПАЛ)
+      # 7. Upload отчётов ВСЕГДА
       - name: Upload audit reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -60,3 +65,22 @@ jobs:
           path: |
             results.md
             results.sarif
+
+      # 8. Fallback Telegram (если вдруг твой код не отправил)
+      - name: Telegram fallback notification
+        if: always()
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          STATUS="${{ job.status }}"
+
+          if [ "$STATUS" = "success" ]; then
+            TEXT="✅ Smart Code Audit прошёл успешно"
+          else
+            TEXT="❌ Smart Code Audit обнаружил проблемы или упал"
+          fi
+
+          curl -s -X POST https://api.telegram.org/bot$TG_BOT_TOKEN/sendMessage \
+            -d chat_id=$TG_CHAT_ID \
+            -d text="$TEXT\n🔗 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
