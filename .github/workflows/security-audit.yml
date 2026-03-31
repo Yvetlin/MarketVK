@@ -15,7 +15,7 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      # 2. Checkout Smart Code Audit
+      # 2. Checkout Smart Code Audit tool
       - name: Checkout Smart Code Audit tool
         uses: actions/checkout@v4
         with:
@@ -28,20 +28,39 @@ jobs:
         with:
           go-version: "1.22"
 
-      # 4. gosec
+      # 4. Install gosec
       - name: Install gosec
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
           echo "$HOME/go/bin" >> $GITHUB_PATH
 
-      # 5. Build SCA
+      # 5. Install semgrep
+      - name: Install semgrep
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install semgrep
+
+      # 6. Install golangci-lint
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s latest
+          echo "$PWD/bin" >> $GITHUB_PATH
+
+      # 7. Build SCA
       - name: Build Smart Code Audit
         run: |
           cd sca-tool
           go mod download
           go build -o sca ./cmd/sca
 
-      # 6. Run SCA (может упасть - это норм)
+      # 8. Debug tools (очень полезно)
+      - name: Debug installed tools
+        run: |
+          which gosec
+          which semgrep
+          which golangci-lint
+
+      # 9. Run SCA
       - name: Run Smart Code Audit
         id: sca
         continue-on-error: true
@@ -56,7 +75,7 @@ jobs:
             --config sca-tool/configs/config.yaml \
             --target .
 
-      # 7. Upload отчётов ВСЕГДА
+      # 10. Upload reports (ВСЕГДА)
       - name: Upload audit reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -66,7 +85,7 @@ jobs:
             results.md
             results.sarif
 
-      # 8. Fallback Telegram (если вдруг твой код не отправил)
+      # 11. Telegram fallback (ВСЕГДА)
       - name: Telegram fallback notification
         if: always()
         env:
