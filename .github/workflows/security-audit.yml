@@ -15,7 +15,7 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
 
-      # 2. Checkout Smart Code Audit tool
+      # 2. Checkout Smart Code Audit
       - name: Checkout Smart Code Audit tool
         uses: actions/checkout@v4
         with:
@@ -37,28 +37,28 @@ jobs:
       # 5. Install semgrep
       - name: Install semgrep
         run: |
-          python3 -m pip install --upgrade pip
           pip install semgrep
 
       # 6. Install golangci-lint
       - name: Install golangci-lint
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s latest
-          echo "$PWD/bin" >> $GITHUB_PATH
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+          | sh -s -- -b $(go env GOPATH)/bin latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      # 7. Build SCA
+      # 7. Debug tools
+      - name: Debug tools
+        run: |
+          which gosec
+          which semgrep
+          which golangci-lint
+
+      # 8. Build SCA
       - name: Build Smart Code Audit
         run: |
           cd sca-tool
           go mod download
           go build -o sca ./cmd/sca
-
-      # 8. Debug tools (очень полезно)
-      - name: Debug installed tools
-        run: |
-          which gosec
-          which semgrep
-          which golangci-lint
 
       # 9. Run SCA
       - name: Run Smart Code Audit
@@ -75,7 +75,7 @@ jobs:
             --config sca-tool/configs/config.yaml \
             --target .
 
-      # 10. Upload reports (ВСЕГДА)
+      # 10. Upload reports
       - name: Upload audit reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -85,7 +85,7 @@ jobs:
             results.md
             results.sarif
 
-      # 11. Telegram fallback (ВСЕГДА)
+      # 11. Telegram fallback
       - name: Telegram fallback notification
         if: always()
         env:
