@@ -2,7 +2,7 @@ name: Security Audit (Smart Code Audit)
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "Yvetlin"]
   pull_request:
   workflow_dispatch:
 
